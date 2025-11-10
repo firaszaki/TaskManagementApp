@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using MudBlazor.Services;
 using TaskManagementApp.Domain;
 using TaskManagementApp.WebManagement.Components;
 
@@ -17,6 +18,8 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
 });
 
 // Add services to the container.
+builder.Services.AddMudServices();
+
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
