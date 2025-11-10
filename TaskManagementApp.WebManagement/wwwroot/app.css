@@ -139,6 +139,10 @@ a, .btn-link {
     color: #006bb7;
 }
 
+.rounded-border {
+    border-radius: 10px;
+}
+
 .btn-primary {
     color: #fff;
     background-color: #1b6ec2;
@@ -190,4 +194,20 @@ h1:focus {
 
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
+}
+
+.am-table table thead tr th {
+    background-color: #c0eefc;
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
+}
+
+.am-table thead tr th p {
+    font-weight: bold;
+    text-shadow: 1px;
+    text-transform: uppercase !important;
+    line-height: 1;
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
+    font-weight: bold;
 }

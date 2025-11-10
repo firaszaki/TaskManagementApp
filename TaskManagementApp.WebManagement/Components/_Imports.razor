@@ -10,4 +10,16 @@
 @using TaskManagementApp.WebManagement.Components
 @using TaskManagementApp.WebManagement.Components.Layout
 
+@using Microsoft.EntityFrameworkCore
+
+@using TaskManagementApp.Application.Repositories
+@using TaskManagementApp.Domain.Entities
+@using TaskManagementApp.Domain
+@using TaskManagementApp.Domain.Commons
+
 @using MudBlazor
+
+@inject ISnackbar Snackbar
+@inject NavigationManager NavigationManager
+@inject IWebHostEnvironment WebHostEnvironment
+@inject IDbContextFactory<ApplicationDbContext> DbContextFactory

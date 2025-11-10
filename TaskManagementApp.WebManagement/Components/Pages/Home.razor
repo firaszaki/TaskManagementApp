@@ -2,6 +2,18 @@
 
 <PageTitle>Home</PageTitle>
 
-<h1>Hello, world!</h1>
+<MudContainer MaxWidth="MaxWidth.Large">
 
-Welcome to your new app.
+    <MudStack Spacing="3" AlignItems="AlignItems.Center" Justify="Justify.Center" Class="pt-7">
+        <MudText Class="fw-bold" Typo="Typo.h5" Align="Align.Center">WELCOME TO TASK MANAGEMENT APP!</MudText>
+        <MudText Class="fw-bold" Typo="Typo.h4" Align="Align.Center">Get ready to be extra organized from now on...</MudText>
+
+        <MudButton StartIcon="@Icons.Material.Filled.Edit"
+                   Href="/tasks"
+                   Size="Size.Large" Variant="Variant.Filled"
+                   Color="Color.Primary">
+            <MudText>Organize My Tasks Now!</MudText>
+        </MudButton>
+    </MudStack>
+    
+</MudContainer>

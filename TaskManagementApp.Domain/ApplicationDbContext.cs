@@ -13,4 +13,11 @@ public class ApplicationDbContext : DbContext
     }
 
     public DbSet<TaskEntity> Tasks { get; set; }
+
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.ConfigureTaskEntity();
+    }
 }

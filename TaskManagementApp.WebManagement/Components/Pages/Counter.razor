@@ -1,19 +1,93 @@
-﻿@page "/counter"
-@rendermode InteractiveServer
+﻿@page "/tasks"
 
-<PageTitle>Counter</PageTitle>
+<PageTitle>Tasks</PageTitle>
 
-<h1>Counter</h1>
+<MudContainer MaxWidth="MaxWidth.Large" Class="pt-4">
+    <MudGrid Spacing="2">
+        <MudItem xs="12">
+            <MudButton Class="px-5" Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="@(() => NavigationManager.NavigateTo("/tasks/register"))">
 
-<p role="status">Current count: @currentCount</p>
+                <MudIcon Icon="@Icons.Material.Outlined.Add" Class="me-2" />
+                <MudText Typo="Typo.body1">Add New Task</MudText>
 
-<button class="btn btn-primary" @onclick="IncrementCount">Click me</button>
+            </MudButton>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudTable @ref="table" ServerData="ServerReload" Context="tableContext" Hover Class="mb-5 am-table rounded-border" Outlined Dense>
+                <LoadingContent>
+                    <MudProgressCircular Color="Color.Primary" Indeterminate />
+                </LoadingContent>
+
+                <HeaderContent>
+                    <MudTh Style="width:1%;">
+                        <MudText Typo="Typo.body1" Align="Align.Center" Class="fw-bold">No.</MudText>
+                    </MudTh>
+
+                    <MudTh>
+                        <MudText Typo="Typo.body1" Class="fw-bold">Title</MudText>
+                    </MudTh>
+
+                    <MudTh>
+                        <MudText Typo="Typo.body1" Class="fw-bold">Status</MudText>
+                    </MudTh>
+
+                    <MudTh>
+                        <MudText Typo="Typo.body1" Class="fw-bold">Completed</MudText>
+                    </MudTh>
+
+                    <MudTh>
+                        <MudText Typo="Typo.body1" Class="fw-bold">Created Date</MudText>
+                    </MudTh>
+
+                    <MudTh Style="width:1%;">
+                        <MudText Typo="Typo.body1" Class="fw-bold">Actions</MudText>
+                    </MudTh>
+                </HeaderContent>
+
+                <RowTemplate>
+                    <MudTd DataLabel="No." Class="fw-bold">
+                        <MudText Typo="Typo.body2" Align="Align.Right" Class="fw-bold">
+                            @((table.CurrentPage * table.RowsPerPage) + table.FilteredItems.ToList().IndexOf(tableContext) + 1).
+                        </MudText>
+                    </MudTd>
+                </RowTemplate>
+
+                <PagerContent>
+                    <MudTablePager InfoFormat="{first_item}-{last_item} of {all_items}" RowsPerPageString="Page size : " />
+                </PagerContent>
+
+                <NoRecordsContent>
+                    <MudText Align="Align.Center">No records found</MudText>
+                </NoRecordsContent>
+            </MudTable>
+        </MudItem>
+    </MudGrid>
+    
+</MudContainer>
 
 @code {
-    private int currentCount = 0;
+    private MudTable<TaskEntity> table { get; set; } = default!;
 
-    private void IncrementCount()
+    private string SearchQuery { get; set; } = string.Empty;
+
+    private async Task<TableData<TaskEntity>> ServerReload(TableState state, CancellationToken token)
     {
-        currentCount++;
+        using var context = DbContextFactory.CreateDbContext();
+
+        var sortColumn = state.SortLabel ?? "Id";
+        var sortDirection = state.SortDirection == SortDirection.Descending ? "desc" : "asc";
+
+        IQueryable<TaskEntity> query = context
+            .Set<TaskEntity>()
+            .AsNoTracking()
+            .AsQueryable();
+
+        int totalRecords = await query.CountAsync(token);
+        var pagedRecords = await query.Skip(state.Page * state.PageSize).Take(state.PageSize).ToListAsync();
+
+        return new TableData<TaskEntity>() { TotalItems = totalRecords, Items = pagedRecords };
     }
 }
