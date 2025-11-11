@@ -1,0 +1,35 @@
+﻿<MudGrid Class="mb-4 mt-n2">
+    <MudItem xs="12">
+        <MudStack Row StretchItems="StretchItems.End">
+            @if (!string.IsNullOrEmpty(ReturnUrl))
+            {
+                <div>
+                    <MudIconButton Icon="@Icons.Material.Outlined.ChevronLeft"
+                                   OnClick="@(() => NavigationManager.NavigateTo(ReturnUrl))" />
+                </div>
+            }
+
+            <div>
+                <MudText Typo="Typo.h4"
+                         Class="mb-n1 fw-bold">
+                    @Title.Trim()
+                </MudText>
+
+                @if (!string.IsNullOrEmpty(Description))
+                {
+                    <MudText Typo="Typo.body1">
+                        @Description.Trim()
+                    </MudText>
+                }
+
+            </div>
+        </MudStack>
+    </MudItem>
+</MudGrid>
+
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string Description { get; set; } = string.Empty;
+
+    [Parameter] public string? ReturnUrl { get; set; }
+}

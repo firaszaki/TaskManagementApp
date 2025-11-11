@@ -1,6 +1,8 @@
 ﻿@page "/tasks/{Id:long}/details"
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="pt-5">
+<MudContainer MaxWidth="MaxWidth.Small" Class="pt-2 fade-in">
+    <PageHeader Title="Tasks" Description="Details of the task that has been registered." ReturnUrl="/" />
+
     <MudGrid>
 
         @if(Data is null)
@@ -12,6 +14,28 @@
         }
         else
         {
+            <MudItem xs="12">
+                <MudStack Spacing="0" Row Justify="Justify.SpaceBetween">
+                    <MudButton Class="px-5" Variant="Variant.Filled"
+                               Color="Color.Primary"
+                               OnClick="@(() => NavigationManager.NavigateTo($"/tasks/{Id}/update"))">
+
+                        <MudIcon Icon="@Icons.Material.Outlined.Edit" Class="me-2" />
+                        <MudText Typo="Typo.body1">Update</MudText>
+
+                    </MudButton>
+
+                    <MudButton OnClick="OnClickDeleteAsync"
+                               Size="Size.Small"
+                               Color="Color.Error"
+                               Variant="Variant.Filled"
+                               StartIcon="@Icons.Material.Outlined.Delete">
+                        <MudText Typo="Typo.body1">Delete</MudText>
+                    </MudButton>
+                </MudStack>
+                
+            </MudItem>
+
             <MudItem xs="12">
                 <MudPaper Class="pa-5 rounded-border" Outlined>
                     <MudText Typo="Typo.body1" Class="mb-n2">Title</MudText>
@@ -57,6 +81,7 @@
     [Parameter] public long Id { get; set; }
 
     [Inject] private TaskRepository TaskRepository { get; set; } = default!;
+    [Inject] private IDialogService DialogService { get; set; } = default!;
 
     private TaskEntity? Data { get; set; }
 
@@ -84,5 +109,40 @@
         }
 
         Data = result.Data;
+    }
+
+    private async Task OnClickDeleteAsync()
+    {
+        DialogOptions dialogOptions = new()
+        {
+            BackgroundClass = "blurred-backdrop",
+            CloseButton = true,
+            FullWidth = true,
+            MaxWidth = MaxWidth.Small
+        };
+
+        DialogParameters<DialogDelete> parameters = new DialogParameters<DialogDelete>()
+        {
+            { p => p.Message , "Confirm to delete this task?" }
+        };
+
+        var dialog = await DialogService.ShowAsync<DialogDelete>("Delete Task", parameters, dialogOptions);
+        var result = await dialog.Result;
+        if (!result!.Canceled)
+        {
+            using var context = DbContextFactory.CreateDbContext();
+            var entity = await context.Tasks.FindAsync(Id);
+            if (entity == null)
+            {
+                Snackbar.Add("Task not found", Severity.Error);
+                return;
+            }
+            context.Tasks.Remove(entity);
+            await context.SaveChangesAsync();
+
+            Snackbar.Add("Successfully deleted", Severity.Success);
+
+            NavigationManager.NavigateTo("/tasks");
+        }
     }
 }

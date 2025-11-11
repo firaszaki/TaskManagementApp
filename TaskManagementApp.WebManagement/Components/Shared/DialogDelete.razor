@@ -1,0 +1,44 @@
+﻿<MudDialog TitleClass="dialog-delete">
+
+    <DialogContent>
+
+        <MudText Typo="Typo.body1" Class="my-4">
+            @Message
+        </MudText>
+
+        <MudDivider Class="my-4 mb-4" />
+
+        <MudToolBar Dense Class="px-0">
+
+            <MudButton OnClick="Cancel"
+                       Variant="Variant.Filled"
+                       Color="Color.Inherit">
+                <MudText Typo="Typo.body1">Cancel</MudText>
+            </MudButton>
+
+            <MudSpacer />
+
+            <MudButton OnClick="OnClickDelete"
+                       Color="Color.Error"
+                       Variant="Variant.Filled"
+                       StartIcon="@Icons.Material.Outlined.Delete">
+                <MudText Typo="Typo.body1">Delete</MudText>
+            </MudButton>
+
+        </MudToolBar>
+
+    </DialogContent>
+</MudDialog>
+
+@code {
+
+    [CascadingParameter]
+    private IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter]
+    public string Message { get; set; } = "-";
+
+    private void OnClickDelete() => MudDialog.Close(DialogResult.Ok(true));
+    private void Cancel() => MudDialog.Cancel();
+
+}

@@ -1,7 +1,11 @@
 ﻿@page "/tasks/register"
 @page "/tasks/{Id:long}/update"
 
-<MudContainer MaxWidth="MaxWidth.Small" Class="pt-5">
+<MudContainer MaxWidth="MaxWidth.Small" Class="pt-2 fade-in">
+    <PageHeader Title="@HeaderTitle()"
+                Description="@HeaderDescription()"
+                ReturnUrl="/tasks" />
+
     <MudGrid>
         <MudItem xs="12">
             <MudPaper Class="pa-5 rounded-border" Outlined>
@@ -22,19 +26,22 @@
                                   Margin="Margin.Dense"
                                   Class="mb-2" />
 
-                    <MudText Typo="Typo.body1" Class="fw-bold mb-n1">Status</MudText>
-                    <MudSelect T="Domain.Entities.TaskStatus"
-                               Variant="Variant.Outlined"
-                               Margin="Margin.Dense"
-                               Class="mb-2"
-                               @bind-Value="Input.Status">
-                        @foreach(var status in Enum.GetValues<Domain.Entities.TaskStatus>())
-                        {
-                            <MudSelectItem T="Domain.Entities.TaskStatus" Value="status">
-                                <MudText Typo="Typo.body1">@status.ToString()</MudText>
-                            </MudSelectItem>
-                        }
-                    </MudSelect>
+                    @if(Id.HasValue)
+                    {
+                        <MudText Typo="Typo.body1" Class="fw-bold mb-n1">Status</MudText>
+                        <MudSelect T="Domain.Entities.TaskStatus"
+                                   Variant="Variant.Outlined"
+                                   Margin="Margin.Dense"
+                                   Class="mb-2"
+                                   @bind-Value="Input.Status">
+                            @foreach (var status in Enum.GetValues<Domain.Entities.TaskStatus>())
+                            {
+                                <MudSelectItem T="Domain.Entities.TaskStatus" Value="status">
+                                    <MudText Typo="Typo.body1">@status.ToString()</MudText>
+                                </MudSelectItem>
+                            }
+                        </MudSelect>
+                    }
 
                     <MudToolBar Gutters="@false"
                                 Class="relative d-flex justify-space-between gap-4 mt-2">
@@ -59,11 +66,57 @@
 
     private TaskEntity Input { get; set; } = new TaskEntity();
 
+    protected override async Task OnParametersSetAsync()
+    {
+        await base.OnParametersSetAsync();
+
+        if(Id.HasValue)
+        {
+            await GetTaskAsync(Id.Value);
+        }
+        
+    }
+
+    private string HeaderTitle()
+    {
+        return Id.HasValue ? "Update Task" : "Add Task";
+    }
+
+    private string HeaderDescription()
+    {
+        return Id.HasValue ? "Modify the task details." : "Create a new task and provide its information.";
+    }
+
+    private async Task GetTaskAsync(long id)
+    {
+        var result = await TaskRepository.GetAsync(id);
+        if (!result.IsSuccess)
+        {
+            Snackbar.Add($"{result.Message}", Severity.Error);
+            return;
+        }
+
+        if (result.Data == null)
+        {
+            Snackbar.Add("Failed to retrieve task. Please try again.", Severity.Error);
+            return;
+        }
+       
+        Input = result.Data;
+    }
+
     private async Task SubmitAsync()
     {
         if (Id.HasValue)
         {
+            var result = await TaskRepository.UpdateAsync(Input);
+            if(!result.IsSuccess)
+            {
+                Snackbar.Add("Failed to update task. Please try again.", Severity.Error);
+                return;
+            }
 
+            NavigationManager.NavigateTo($"/tasks/{Id}/details");
         }
         else
         {

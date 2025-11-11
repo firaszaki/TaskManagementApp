@@ -3,6 +3,7 @@ using MudBlazor.Services;
 using TaskManagementApp.Application.Repositories;
 using TaskManagementApp.Domain;
 using TaskManagementApp.WebManagement.Components;
+using TaskManagementApp.WebManagement.Components.Pages.Tasks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +21,9 @@ builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
 
 // Add services to the container.
 builder.Services.AddScoped<TaskRepository>();
+
+// Add filtering state to the container
+builder.Services.AddScoped<TaskFilterState>();
 
 builder.Services.AddMudServices();
 

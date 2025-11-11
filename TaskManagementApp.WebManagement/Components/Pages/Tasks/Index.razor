@@ -2,17 +2,32 @@
 
 <PageTitle>Tasks</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.Large" Class="pt-5">
+<MudContainer MaxWidth="MaxWidth.Large" Class="pt-1 fade-in">
+    <PageHeader Title="Tasks" Description="List of tasks that has been registered." ReturnUrl="/" />
+
     <MudGrid Spacing="2">
+
         <MudItem xs="12">
-            <MudButton Class="px-5" Variant="Variant.Filled"
-                       Color="Color.Primary"
-                       OnClick="@(() => NavigationManager.NavigateTo("/tasks/register"))">
+            <MudStack Row Spacing="0" Justify="Justify.SpaceBetween">
+                <MudButton Class="px-5" Variant="Variant.Filled"
+                           Color="Color.Primary"
+                           OnClick="@(() => NavigationManager.NavigateTo("/tasks/register"))">
 
-                <MudIcon Icon="@Icons.Material.Outlined.Add" Class="me-2" />
-                <MudText Typo="Typo.body1">Add New Task</MudText>
+                    <MudIcon Icon="@Icons.Material.Outlined.Add" Class="me-2" />
+                    <MudText Typo="Typo.body1">Add New Task</MudText>
 
-            </MudButton>
+                </MudButton>
+
+                <MudButton Variant="Variant.Outlined"
+                           Color="Color.Primary"
+                           Size="Size.Small"
+                           DropShadow="true"
+                           OnClick="@(() => ShowFilterDialog = true)"
+                           StartIcon="@Icons.Material.Filled.FilterList">
+                    <MudText Typo="Typo.body1">Filter</MudText>
+                </MudButton>
+            </MudStack>
+            
         </MudItem>
 
         <MudItem xs="12">
@@ -128,14 +143,76 @@
     
 </MudContainer>
 
+<MudDialog @bind-Visible="ShowFilterDialog" Options="DialogFilterOptions" TitleClass="dialog-primary">
+    <TitleContent>
+        <MudText Typo="Typo.h5">Search Filter</MudText>
+    </TitleContent>
+
+    <DialogContent>
+        <MudGrid Spacing="2">
+            <MudItem xs="12">
+                <MudText Typo="Typo.body1" Class="fw-bold mb-n1">Search</MudText>
+                <MudTextField T="string"
+                              @bind-Value="@TaskFilterState.TaskFilterParameters.SearchQuery"
+                              Placeholder="Search..."
+                              Clearable="true" Margin="Margin.Dense" Class="my-0"
+                              Variant="Variant.Outlined" />
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudText Typo="Typo.body1" Class="fw-bold mb-n1">Registration Status Type</MudText>
+                <MudSelect T="Domain.Entities.TaskStatus?"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Class="mb-2"
+                           @bind-Value="TaskFilterState.TaskFilterParameters.Status">
+                    @foreach (var status in Enum.GetValues<Domain.Entities.TaskStatus>())
+                    {
+                        <MudSelectItem T="Domain.Entities.TaskStatus?" Value="status">
+                            <MudText Typo="Typo.body1">@status.ToString()</MudText>
+                        </MudSelectItem>
+                    }
+                </MudSelect>
+            </MudItem>
+        </MudGrid>
+
+        <MudDivider Class="my-2" />
+
+        <MudStack Row Class="mt-2 mb-2" Spacing="3" Justify="Justify.SpaceBetween">
+            <MudStack Row>
+                <MudButton Color="Color.Inherit" Variant="Variant.Filled" OnClick="@(() => ShowFilterDialog = false)">
+                    <MudText>Close</MudText>
+                </MudButton>
+
+                <MudButton Color="Color.Warning" Variant="Variant.Filled" OnClick="@(() => ResetSearch())" StartIcon="@Icons.Material.Outlined.Refresh">
+                    <MudText>Reset</MudText>
+                </MudButton>
+            </MudStack>
+
+            <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="@(() => ApplyFilters())" StartIcon="@Icons.Material.Outlined.Search">
+                <MudText>Search</MudText>
+            </MudButton>
+        </MudStack>
+    </DialogContent>
+</MudDialog>
+
 @code {
+    [Inject] private TaskFilterState TaskFilterState { get; set; } = default!;
+
     private MudTable<TaskEntity> table { get; set; } = default!;
 
     private string SearchQuery { get; set; } = string.Empty;
 
+    private bool ShowFilterDialog { get; set; } = false;
+
+    private readonly DialogOptions DialogFilterOptions = new() { FullWidth = true, CloseButton = true, MaxWidth = MaxWidth.Medium };
+
     private async Task<TableData<TaskEntity>> ServerReload(TableState state, CancellationToken token)
     {
         using var context = DbContextFactory.CreateDbContext();
+
+        var search = TaskFilterState.TaskFilterParameters.SearchQuery;
+        var status = TaskFilterState.TaskFilterParameters.Status;
 
         var sortColumn = state.SortLabel ?? "Id";
         var sortDirection = state.SortDirection == SortDirection.Descending ? "desc" : "asc";
@@ -143,11 +220,42 @@
         IQueryable<TaskEntity> query = context
             .Set<TaskEntity>()
             .AsNoTracking()
+            .OrderByDescending(c => c.CreatedAt)
             .AsQueryable();
+
+        query = ApplyFilters(query, search, status);
 
         int totalRecords = await query.CountAsync(token);
         var pagedRecords = await query.Skip(state.Page * state.PageSize).Take(state.PageSize).ToListAsync();
 
         return new TableData<TaskEntity>() { TotalItems = totalRecords, Items = pagedRecords };
+    }
+
+    private static IQueryable<T> ApplyFilters<T>(IQueryable<T> query,
+        string? search,
+        Domain.Entities.TaskStatus? status) where T : TaskEntity
+    {
+        if (!string.IsNullOrEmpty(search))
+        {
+            query = query.Where(c => c.Title.Contains(search, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (status.HasValue)
+            query = query.Where(c => c.Status == status.Value);
+
+        return query;
+    }
+
+    private async Task ResetSearch()
+    {
+        TaskFilterState.Reset();
+        await table.ReloadServerData();
+        ShowFilterDialog = false;
+    }
+
+    private async Task ApplyFilters()
+    {
+        await table.ReloadServerData();
+        ShowFilterDialog = false;
     }
 }
