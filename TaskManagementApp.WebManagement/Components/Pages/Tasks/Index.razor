@@ -1,0 +1,153 @@
+﻿@page "/tasks"
+
+<PageTitle>Tasks</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="pt-5">
+    <MudGrid Spacing="2">
+        <MudItem xs="12">
+            <MudButton Class="px-5" Variant="Variant.Filled"
+                       Color="Color.Primary"
+                       OnClick="@(() => NavigationManager.NavigateTo("/tasks/register"))">
+
+                <MudIcon Icon="@Icons.Material.Outlined.Add" Class="me-2" />
+                <MudText Typo="Typo.body1">Add New Task</MudText>
+
+            </MudButton>
+        </MudItem>
+
+        <MudItem xs="12">
+            <MudTable @ref="table" ServerData="ServerReload" Context="tableContext" Hover Class="mb-5 am-table rounded-border" Outlined>
+                <LoadingContent>
+                    <MudProgressCircular Color="Color.Primary" Indeterminate />
+                </LoadingContent>
+
+                <HeaderContent>
+                    <MudTh Style="width:1%;">
+                        <MudText Typo="Typo.body1" Align="Align.Center" Class="fw-bold">No.</MudText>
+                    </MudTh>
+
+                    <MudTh>
+                        <MudText Typo="Typo.body1" Class="fw-bold">Title</MudText>
+                    </MudTh>
+
+                    <MudTh>
+                        <MudTableSortLabel SortLabel="@(nameof(TaskEntity.Status))" T="TaskEntity">
+
+                            <MudText Typo="Typo.body1" Class="fw-bold">Status</MudText>
+                        </MudTableSortLabel>
+                    </MudTh>
+
+                    <MudTh>
+                        <MudText Typo="Typo.body1" Class="fw-bold">Completed</MudText>
+                    </MudTh>
+
+                    <MudTh>
+                        <MudText Typo="Typo.body1" Class="fw-bold">Created Date</MudText>
+                    </MudTh>
+
+                    <MudTh Style="width:1%;">
+                        <MudText Typo="Typo.body1" Class="fw-bold">Actions</MudText>
+                    </MudTh>
+                </HeaderContent>
+
+                <RowTemplate>
+                    <MudTd DataLabel="No." Class="fw-bold">
+                        <MudText Typo="Typo.body2" Align="Align.Right" Class="fw-bold">
+                            @((table.CurrentPage * table.RowsPerPage) + table.FilteredItems.ToList().IndexOf(tableContext) + 1).
+                        </MudText>
+                    </MudTd>
+
+                    <MudTd DataLabel="Title">
+                        <MudText Typo="Typo.body1">
+                            @tableContext.Title
+                        </MudText>
+                    </MudTd>
+
+                    <MudTd DataLabel="Status">
+                        <MudText Typo="Typo.body1" Align="Align.Start">
+                            @switch (tableContext.Status)
+                            {
+                                case Domain.Entities.TaskStatus.InProgress:
+                                    <MudChip T="string" Size="Size.Medium" Icon="@Icons.Material.Filled.HourglassBottom" Color="Color.Default">
+                                        <MudText Typo="Typo.body1">In Progress</MudText>
+                                    </MudChip>
+                                    break;
+
+                                case Domain.Entities.TaskStatus.Pending:
+                                    <MudChip T="string" Size="Size.Medium" Icon="@Icons.Material.Filled.PendingActions" Color="Color.Warning">
+                                        <MudText Typo="Typo.body1">Pending</MudText>
+                                    </MudChip>
+                                    break;
+
+                                case Domain.Entities.TaskStatus.Completed:
+                                    <MudChip T="string" Size="Size.Medium" Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success">
+                                        <MudText Typo="Typo.body1">Completed</MudText>
+                                    </MudChip>
+                                    break;
+                            }
+                        </MudText>
+                    </MudTd>
+
+                    <MudTd DataLabel="Completed">
+                        @if(tableContext.IsCompleted)
+                        {
+                            <MudText Typo="Typo.body1">Completed</MudText>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.body1">Not Completed</MudText>
+                        }
+                    </MudTd>
+
+                    <MudTd DataLabel="Created Date">
+                        <MudText Typo="Typo.body1" Align="Align.Start" Style="white-space:pre-line; line-height: 1.1;">
+                            @(tableContext.CreatedAt.HasValue ? tableContext.CreatedAt.Value.ToString("h:mm tt \n d MMMM yyyy") : "")
+                        </MudText>
+                    </MudTd>
+
+                    <MudTd DataLabel="Action">
+                        <MudStack Row>
+                            <MudIconButton Icon="@Icons.Material.Outlined.Monitor"
+                                           OnClick="@(() => NavigationManager.NavigateTo($"/tasks/{tableContext.Id}/details"))"
+                                           Color="Color.Primary"
+                                           Size="Size.Medium" />
+                        </MudStack>
+                    </MudTd>
+                </RowTemplate>
+
+                <PagerContent>
+                    <MudTablePager InfoFormat="{first_item}-{last_item} of {all_items}" RowsPerPageString="Page size : " />
+                </PagerContent>
+
+                <NoRecordsContent>
+                    <MudText Align="Align.Center">No records found</MudText>
+                </NoRecordsContent>
+            </MudTable>
+        </MudItem>
+    </MudGrid>
+    
+</MudContainer>
+
+@code {
+    private MudTable<TaskEntity> table { get; set; } = default!;
+
+    private string SearchQuery { get; set; } = string.Empty;
+
+    private async Task<TableData<TaskEntity>> ServerReload(TableState state, CancellationToken token)
+    {
+        using var context = DbContextFactory.CreateDbContext();
+
+        var sortColumn = state.SortLabel ?? "Id";
+        var sortDirection = state.SortDirection == SortDirection.Descending ? "desc" : "asc";
+
+        IQueryable<TaskEntity> query = context
+            .Set<TaskEntity>()
+            .AsNoTracking()
+            .AsQueryable();
+
+        int totalRecords = await query.CountAsync(token);
+        var pagedRecords = await query.Skip(state.Page * state.PageSize).Take(state.PageSize).ToListAsync();
+
+        return new TableData<TaskEntity>() { TotalItems = totalRecords, Items = pagedRecords };
+    }
+}

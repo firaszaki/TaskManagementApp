@@ -1,0 +1,93 @@
+﻿@page "/tasks/register"
+@page "/tasks/{Id:long}/update"
+
+<MudContainer MaxWidth="MaxWidth.Small" Class="pt-5">
+    <MudGrid>
+        <MudItem xs="12">
+            <MudPaper Class="pa-5 rounded-border" Outlined>
+                <EditForm Model="@Input" OnValidSubmit="SubmitAsync">
+                    <DataAnnotationsValidator />
+                    <ValidationSummary />
+
+                    <MudText Typo="Typo.body1" Class="fw-bold mb-n1">Title</MudText>
+                    <MudTextField @bind-Value="Input.Title"
+                                  Variant="Variant.Outlined"
+                                  Margin="Margin.Dense"
+                                  Class="mb-2" />
+
+                    <MudText Typo="Typo.body1" Class="fw-bold mb-n1">Description</MudText>
+                    <MudTextField @bind-Value="Input.Description"
+                                  Variant="Variant.Outlined"
+                                  Lines="3"
+                                  Margin="Margin.Dense"
+                                  Class="mb-2" />
+
+                    <MudText Typo="Typo.body1" Class="fw-bold mb-n1">Status</MudText>
+                    <MudSelect T="Domain.Entities.TaskStatus"
+                               Variant="Variant.Outlined"
+                               Margin="Margin.Dense"
+                               Class="mb-2"
+                               @bind-Value="Input.Status">
+                        @foreach(var status in Enum.GetValues<Domain.Entities.TaskStatus>())
+                        {
+                            <MudSelectItem T="Domain.Entities.TaskStatus" Value="status">
+                                <MudText Typo="Typo.body1">@status.ToString()</MudText>
+                            </MudSelectItem>
+                        }
+                    </MudSelect>
+
+                    <MudToolBar Gutters="@false"
+                                Class="relative d-flex justify-space-between gap-4 mt-2">
+                        <MudButton OnClick="Cancel" Color="Color.Default" Variant="Variant.Filled">
+                            <MudText Typo="Typo.body1" Class="fw-bold">Cancel</MudText>
+                        </MudButton>
+
+                        <MudButton ButtonType="ButtonType.Submit" Color="Color.Primary" Variant="Variant.Filled" StartIcon="@Icons.Material.Outlined.Save">
+                            <MudText Typo="Typo.body1" Class="fw-bold">Save</MudText>
+                        </MudButton>
+                    </MudToolBar>
+                </EditForm>
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    [Parameter] public long? Id { get; set; }
+
+    [Inject] private TaskRepository TaskRepository { get; set; } = default!;
+
+    private TaskEntity Input { get; set; } = new TaskEntity();
+
+    private async Task SubmitAsync()
+    {
+        if (Id.HasValue)
+        {
+
+        }
+        else
+        {
+            var result = await TaskRepository.AddAsync(Input);
+            if (!result.IsSuccess)
+            {
+                Snackbar.Add("Failed to add new task. Please try again.", Severity.Error);
+                return;
+            }
+
+            NavigationManager.NavigateTo($"/tasks/{result.Data}/details");
+        }
+        
+    }
+
+    private void Cancel()
+    {
+        if (Id.HasValue)
+        {
+            NavigationManager.NavigateTo($"/tasks/{Id}/details");
+        }
+        else
+        {
+            NavigationManager.NavigateTo("/tasks");
+        }
+    }
+}
